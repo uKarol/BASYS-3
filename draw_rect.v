@@ -33,7 +33,7 @@ module draw_rect
     input wire  [11:0]  x_pos,
     input wire  [11:0]  y_pos,
     input wire clk,
-        
+    input wire colission,    
     input [10:0] hcount_in,
     input hsync_in,
     input hblnk_in,
@@ -52,7 +52,10 @@ module draw_rect
     output reg vblnk_out,
     output reg [11:0] rgb_out,
     
-    output reg [11:0] pixel_addr = 0
+    output reg [11:0] pixel_addr = 0,
+    
+    output reg [11:0] x_pos_out,
+    output reg [11:0] y_pos_out
     );
 
 reg [11:0] rgb_nxt;
@@ -89,9 +92,15 @@ begin
      
   
 
-    rgb_nxt = ( (hcount_delay2>= x_pos_reg) && (hcount_delay2 < (x_pos_reg+width)) && (vcount_delay2 >= y_pos_reg)&&(vcount_delay2 < (y_pos_reg +heigth))  ) ? rgb_pixel : rgb_delay2;
+    //rgb_nxt = ( (hcount_delay2>= x_pos_reg) && (hcount_delay2 < (x_pos_reg+width)) && (vcount_delay2 >= y_pos_reg)&&(vcount_delay2 < (y_pos_reg +heigth))  ) ? rgb_pixel : rgb_delay2;
     
-    
+         if( (hcount_delay2>= x_pos_reg) && (hcount_delay2 < (x_pos_reg+width)) && (vcount_delay2 >= y_pos_reg)&&(vcount_delay2 < (y_pos_reg +heigth))  ) 
+         begin 
+            if(colission==1) rgb_nxt = {4'hf,rgb_pixel[7:0]};
+            else rgb_nxt = rgb_pixel; 
+         end
+         else
+            rgb_nxt = rgb_delay2;
     
     
 end
@@ -102,6 +111,9 @@ begin
     
    x_pos_reg <= x_pos;
    y_pos_reg <= y_pos; 
+   
+   x_pos_out <= x_pos_reg;
+   y_pos_out <= y_pos_reg; 
 
    hcount_delay1 <= hcount_in;
    hsync_delay1 <= hsync_in;

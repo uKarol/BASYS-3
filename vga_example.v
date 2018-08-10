@@ -14,7 +14,9 @@ module vga_example (
   input wire btn,
   input wire btnL,
   input wire btnR,
+  input wire btnD,
   input wire [2:0]sw,
+  input wire sw3,
   output reg vs,
   output reg hs,
   output reg [3:0] r,
@@ -89,6 +91,21 @@ clk_wiz_1 my_clk_wiz_1(
  wire vsync_out_obst, hsync_out_obst;
  wire vblnk_out_obst, hblnk_out_obst; 
 
+// landing
+
+ wire [11:0] rgb_out_landing;
+ wire [10:0] vcount_out_landing, hcount_out_landing;
+ wire vsync_out_landing, hsync_out_landing;
+ wire vblnk_out_landing, hblnk_out_landing; 
+ 
+ // points
+ 
+ wire [11:0] rgb_out_point;
+ wire [10:0] vcount_out_point, hcount_out_point;
+ wire vsync_out_point, hsync_out_point;
+ wire vblnk_out_point, hblnk_out_point; 
+
+
 // myszka
 
     wire [11:0]xpos;
@@ -109,7 +126,8 @@ clk_wiz_1 my_clk_wiz_1(
     wire mouse_left;
     wire [11:0]xpos_ctl_out; 
     wire [11:0]ypos_ctl_out;
-
+    wire [11:0]xpos_rect_out; 
+    wire [11:0]ypos_rect_out;
 
   vga_timing my_timing (
     .vcount(vcount),
@@ -164,7 +182,10 @@ clk_wiz_1 my_clk_wiz_1(
   .hblnk_out(hblnk_out_obst)
 
   );
-
+  wire colission_up;
+  wire colission_down;
+  wire colission_right;
+  wire colission_left;
   draw_rect
     # (
 
@@ -181,13 +202,13 @@ clk_wiz_1 my_clk_wiz_1(
   
   .clk(pclk),
   
-  .rgb_in(rgb_out_obst),
-  .vcount_in(vcount_out_obst),
-  .vsync_in(vsync_out_obst),
-  .vblnk_in(vblnk_out_obst),
-  .hcount_in(hcount_out_obst),
-  .hsync_in(hsync_out_obst),
-  .hblnk_in(hblnk_out_obst),
+  .rgb_in(rgb_out_point),
+  .vcount_in(vcount_out_point),
+  .vsync_in(vsync_out_point),
+  .vblnk_in(vblnk_out_point),
+  .hcount_in(hcount_out_point),
+  .hsync_in(hsync_out_point),
+  .hblnk_in(hblnk_out_point),
   
   .rgb_pixel(pixel_rgb),
   
@@ -198,9 +219,11 @@ clk_wiz_1 my_clk_wiz_1(
   .hcount_out(hcount_out_rect),
   .hsync_out(hsync_out_rect),
   .hblnk_out(hblnk_out_rect),
+  .colission(colission_up||colission_down|| colission_left || colission_right),
   
-  
-  .pixel_addr(pixel_addr)
+  .pixel_addr(pixel_addr),
+  .x_pos_out(xpos_rect_out),
+  .y_pos_out(ypos_rect_out)
   );
     
 
@@ -259,6 +282,12 @@ clk_wiz_1 my_clk_wiz_1(
     .db_level(left)
   );
   
+
+    
+    wire landed;
+    wire started;
+  
+  
   draw_rect_ctl my_draw_rect_ctl(
         .right(right),
         .left(left),
@@ -267,8 +296,94 @@ clk_wiz_1 my_clk_wiz_1(
         .y_pos(ypos_ctl_out),
         .mouse_left(mouse_left),
         .clk(pclk100M),
-        .leds(led)
+        .leds(led),
+        .rst(btnD),
+        .colission_up(colission_up),
+        .colission_down(colission_down),
+        
+        .colission_left( colission_left),
+        .colission_right(  colission_right),
+        .landed(landed),
+        .started(started)
   );
+  
+  colision_detector my_colission(
+    .clk(pclk100M),
+    .x_pos(xpos_rect_out),
+    .y_pos(ypos_rect_out),
+    .lvl(sw),
+    .rst(btnD),
+    .colission_up( colission_up),
+    .colission_down(colission_down),
+    .colission_left( colission_left),
+    .colission_right(  colission_right),
+    .landed(landed),
+    .landing_enable(sw3)
+  );
+  
+  draw_landing my_landing(
+      
+          .clk(pclk),
+          .rst(btnD),
+          
+          .landing1_enable(!started),
+          .landing2_enable(sw3),
+          
+         .hcount_in(hcount_out_obst),
+         .hsync_in(hsync_out_obst),
+         .hblnk_in(hblnk_out_obst),
+         .vcount_in(vcount_out_obst),
+         .vsync_in(vsync_out_obst),
+         .vblnk_in(vblnk_out_obst),
+         .rgb_in(rgb_out_obst),
+         .hcount_out(hcount_out_landing),
+         .hsync_out(hsync_out_landing),
+         .hblnk_out(hblnk_out_landing),
+         .vcount_out(vcount_out_landing),
+         .vsync_out(vsync_out_landing),
+         .vblnk_out(vblnk_out_landing),
+         .rgb_out(rgb_out_landing)
+      
+      
+      );
+      
+      wire [4:0]point_en;
+      
+      draw_points my_points(
+      
+      
+        .clk(pclk),
+        .rst(btnD),
+      
+        .point_enable(~point_en),
+        .lvl(sw),
+      
+        .hcount_in(hcount_out_landing),
+        .hsync_in(hsync_out_landing),
+        .hblnk_in(hblnk_out_landing),
+        .vcount_in(vcount_out_landing),
+        .vsync_in(vsync_out_landing),
+        .vblnk_in(vblnk_out_landing),
+        .rgb_in(rgb_out_landing),
+        .hcount_out(hcount_out_point),
+        .hsync_out(hsync_out_point),
+        .hblnk_out(hblnk_out_point),
+        .vcount_out(vcount_out_point),
+        .vsync_out(vsync_out_point),
+        .vblnk_out(vblnk_out_point),
+        .rgb_out(rgb_out_point)
+      
+      );
+  
+      collect_points my_collect_points(
+              .clk(pclk),
+              .rst(btnD),
+              .x_pos(xpos_rect_out),
+              .y_pos(ypos_rect_out),
+              .lvl(sw),
+              .captured(point_en)
+                
+          );
   
   // This is a simple test pattern generator.
   
