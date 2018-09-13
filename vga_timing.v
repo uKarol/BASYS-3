@@ -17,7 +17,8 @@ module vga_timing (
   output reg [10:0] hcount = 0,
   output reg hsync = 0,
   output reg hblnk = 0,
-  input wire pclk 
+  input wire pclk,
+  input rst 
   );
 
   // Describe the actual circuit for the assignment.
@@ -45,15 +46,26 @@ module vga_timing (
   reg hsync_nxt;
   reg hblnk_nxt;
 
-   always @(posedge pclk) begin
+   always @(posedge pclk or posedge rst) begin
     
-    hcount <= hcount_nxt;
-    vcount <= vcount_nxt;
-    hblnk <= hblnk_nxt;
-    hsync <= hsync_nxt;
-    vblnk <= vblnk_nxt;
-    vsync <= vsync_nxt;
-       
+    if(rst == 1)
+    begin
+        hcount <= 0;
+        vcount <= 0;
+        hblnk <= 0;
+        hsync <= 0;
+        vblnk <= 0;
+        vsync <= 0;
+    end
+    else
+    begin
+        hcount <= hcount_nxt;
+        vcount <= vcount_nxt;
+        hblnk <= hblnk_nxt;
+        hsync <= hsync_nxt;
+        vblnk <= vblnk_nxt;
+        vsync <= vsync_nxt;
+    end   
    end  
   always @*
   fork
