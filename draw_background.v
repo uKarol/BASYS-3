@@ -21,6 +21,8 @@
 
 
 module draw_background(
+    
+    input rst,
     input [10:0] hcount_in,
     input [10:0] vcount_in,
     input vsync_in,
@@ -36,81 +38,121 @@ module draw_background(
     output reg hblnk_out,
     output reg vsync_out,
     output reg vblnk_out,
-    output reg [11:0]rgb_out
+    output reg [11:0]rgb_out,
+    
+    output reg [11:0] pixel_addr,
+    input [11:0] rgb_pixel
+    
     );
-    reg [11:0]rgb_nxt;
-localparam
-      y_dist = 10,
-      x_dist = 10,
-      
-      x_5_dist = 30;
+        
+     reg [11:0] rgb_nxt;
+     reg [11:0] pixel_addr_nxt;
+ 
+     reg hsync_delay1;
+     reg hblnk_delay1;
+     reg [10:0] hcount_delay1;
+     reg vsync_delay1;
+     reg vblnk_delay1;
+     reg [10:0] vcount_delay1;
+     reg [11:0] rgb_delay1;
+ 
+     reg hsync_delay2;   
+     reg hblnk_delay2;
+     reg [10:0] hcount_delay2;
+     reg vsync_delay2;
+     reg vblnk_delay2;
+     reg [10:0] vcount_delay2;
+     reg [11:0] rgb_delay2;
+
 always @* 
 begin
     
 
-      if (vblnk_in || hblnk_in) rgb_nxt = 12'h0_0_0; 
+    if (vblnk_in || hblnk_in)begin
+         rgb_nxt = 12'h0_0_0; 
+         pixel_addr_nxt = pixel_addr;  
+    end
     else
     begin
-      // Active display, top edge, make a yellow line.
-      if (vcount_in == 0) rgb_nxt = 12'hf_f_0;
-      // Active display, bottom edge, make a red line.
-      else if (vcount_in == 599) rgb_nxt = 12'hf_0_0;
-      // Active display, left edge, make a green line.
-      else if (hcount_in == 0) rgb_nxt = 12'h0_f_0;
-      // Active display, right edge, make a blue line.
-      else if (hcount_in == 799) rgb_nxt = 12'h0_0_f;
-      // Active display, interior, fill with gray.
-      // You will replace this with your own test.
-  
-  //na pa³e
-     
-     // LITERA K
-     
-     else if ( ( ( (hcount_in >= 0 + x_dist) && (hcount_in <= 17 + x_dist ) ) && ( (vcount_in >= y_dist) && (vcount_in <= 17 + y_dist ) ) ) && (vcount_in == 2*17  - 7 + x_dist - hcount_in ) ) rgb_nxt = 12'h0_f_0; 
-     
-     else if ( ( ( (hcount_in >= 0 + x_dist) && (hcount_in <= 16 + x_dist ) ) && ( (vcount_in >= y_dist) && (vcount_in <= 16 + y_dist ) ) ) && (vcount_in == 2*16 -6 + x_dist - hcount_in ) ) rgb_nxt = 12'h0_f_0;     
-     else if ( ( ( (hcount_in >= 0 + x_dist) && (hcount_in <= 17 + x_dist ) ) && ( (vcount_in >= 13 + y_dist) && (vcount_in <= 30 + y_dist ) ) ) && (vcount_in == 13 + hcount_in ) ) rgb_nxt = 12'h0_f_0; 
-     
-     else if ( ( ( (hcount_in >= 0 + x_dist) && (hcount_in <= 16 + x_dist ) ) && ( (vcount_in >= 14 + y_dist) && (vcount_in <= 30 + y_dist ) ) ) && (vcount_in == 14 + hcount_in ) ) rgb_nxt = 12'h0_f_0; 
-                
-      else if   ( ( (hcount_in >= 0 + x_dist) && (hcount_in <= 1 + x_dist ) ) && ( (vcount_in >= 0 + y_dist) && (vcount_in <= 30 + y_dist ) ) ) rgb_nxt = 12'h0_f_0;  
-      
-
-
-    // cyfra 5
     
-     else if   ( ( (hcount_in >= 0 + x_5_dist) && (hcount_in <= 1 + x_5_dist ) ) && ( (vcount_in >= 0 + y_dist) && (vcount_in <= 15 + y_dist ) ) ) rgb_nxt = 12'h0_f_0;  
+    if( vcount_in > 0 && vcount_in < 600 && hcount_in > 0 && hcount_in < 800 ) 
+    begin
+        pixel_addr_nxt[11:6] = vcount_in[5:0];
+        pixel_addr_nxt[5:0] =  hcount_in[5:0]; 
+    end 
+    else pixel_addr_nxt = pixel_addr;
          
-     else if   ( ( (hcount_in >= 10 + x_5_dist) && (hcount_in <= 11 + x_5_dist ) ) && ( (vcount_in >= 18 + y_dist) && (vcount_in <= 26 + y_dist ) ) ) rgb_nxt = 12'h0_f_0;  
-     
-     else if   ( ( (hcount_in >= 2 + x_5_dist) && (hcount_in <= 12 + x_5_dist ) ) && ( (vcount_in >= 0 + y_dist) && (vcount_in <= 1 + y_dist ) ) ) rgb_nxt = 12'h0_f_0;  
-    
-     else if   ( ( (hcount_in >= 2 + x_5_dist) && (hcount_in <= 8 + x_5_dist ) ) && ( (vcount_in >= 14 + y_dist) && (vcount_in <= 15 + y_dist ) ) ) rgb_nxt = 12'h0_f_0;  
-        
-     else if   ( ( (hcount_in >= 0 + x_5_dist) && (hcount_in <= 8 + x_5_dist ) ) && ( (vcount_in >= 29 + y_dist) && (vcount_in <= 30 + y_dist ) ) ) rgb_nxt = 12'h0_f_0;  
-                   
-     
-     else if ( ( ( (hcount_in >= 7 + x_5_dist) && (hcount_in <= 11 + x_5_dist ) ) && ( (vcount_in >= 14 + y_dist) && (vcount_in <= 18 + y_dist ) ) ) && (vcount_in == hcount_in + 17 - x_5_dist  ) ) rgb_nxt = 12'h0_f_0; 
+    if( vcount_delay2 > 0 && vcount_delay2 < 600 && hcount_delay2 > 0 && hcount_delay2 < 800 ) 
+    rgb_nxt = rgb_pixel;
+    else 
+    begin
+     rgb_nxt = 0;
 
-     else if ( ( ( (hcount_in >= 8 + x_5_dist) && (hcount_in <= 11 + x_5_dist ) ) && ( (vcount_in >= 15 + y_dist) && (vcount_in <= 19 + y_dist ) ) ) && (vcount_in == 16 - x_5_dist + hcount_in ) ) rgb_nxt = 12'h0_f_0; 
-    
-     else if ( ( ( (hcount_in >= 7 + x_5_dist) && (hcount_in <= 11 + x_5_dist ) ) && ( (vcount_in >= 26+ y_dist) && (vcount_in <= 30 + y_dist ) ) ) && ( vcount_in ==  47 + x_5_dist - hcount_in  ) ) rgb_nxt = 12'h0_f_0; 
-
-     else if ( ( ( (hcount_in >= 8 + x_5_dist) && (hcount_in <= 11 + x_5_dist ) ) && ( (vcount_in >= 26 + y_dist) && (vcount_in <= 30 + y_dist ) ) ) && (vcount_in ==  48 + x_5_dist - hcount_in  ) ) rgb_nxt = 12'h0_f_0; 
-           
-          else rgb_nxt = 12'h8_8_8;    
-   end 
-
+    end
+    end
         
 end
-always @(posedge clk) 
-begin   
-   hcount_out <= hcount_in;
-   vcount_out <= vcount_in;
-   vblnk_out <= vblnk_in;
-   vsync_out <= vsync_in;
-   hblnk_out <= hblnk_in;
-   hsync_out <= hsync_in;
+always @(posedge clk or posedge rst) 
+begin 
+
+   if(rst == 1) begin  
+        hcount_out <= 0;
+        vcount_out <= 0;
+        vblnk_out <= 0;
+        vsync_out <= 0;
+        hblnk_out <= 0;
+        hsync_out <= 0;
+        rgb_out <= 0; 
+        
+        hcount_delay1 <= 0;
+        hsync_delay1 <= 0;
+        hblnk_delay1 <= 0;
+        vcount_delay1 <= 0;
+        vsync_delay1 <= 0;
+        vblnk_delay1 <= 0;
+        rgb_delay1 <= 0;
+
+        hcount_delay2 <= 0;
+        hsync_delay2 <= 0;
+        hblnk_delay2 <= 0;
+        vcount_delay2 <= 0;
+        vsync_delay2 <= 0;
+        vblnk_delay2 <= 0;
+        rgb_delay2 <= 0;
+        pixel_addr <= 0;
+
+   end
+   
+   else begin  
+        
+        hcount_delay1 <= hcount_in;
+        hsync_delay1 <= hsync_in;
+        hblnk_delay1 <= hblnk_in;
+        vcount_delay1 <= vcount_in;
+        vsync_delay1 <= vsync_in;
+        vblnk_delay1 <= vblnk_in;
+        rgb_delay1 <= 0;
+
+        hcount_delay2 <= hcount_delay1;
+        hsync_delay2 <= hsync_delay1;
+        hblnk_delay2 <= hblnk_delay1;
+        vcount_delay2 <= vcount_delay1;
+        vsync_delay2 <= vsync_delay1;
+        vblnk_delay2 <= vblnk_delay1;
+        rgb_delay2 <= rgb_delay1;
+
+
+        hcount_out <= hcount_delay2;
+        vcount_out <= vcount_delay2;
+        vblnk_out <= vblnk_delay2;
+        vsync_out <= vsync_delay2;
+        hblnk_out <= hblnk_delay2;
+        hsync_out <= hsync_delay2;
+
    rgb_out <= rgb_nxt; 
+
+   pixel_addr <= pixel_addr_nxt;
+   end
+   
  end 
  endmodule
